@@ -30,9 +30,8 @@ export const homeTypeEnum = pgEnum("homeType", [
   "apartment",
 ]);
 export const schoolRatingEnum = pgEnum("schoolRating", ["A", "B", "C", "D"]);
-export const roleTypeEnum = pgEnum("role", ["buyer", "seller"]);
-export const intentEnum = pgEnum("intent", ["buying", "renting"]);
-export const petTypeEnum = pgEnum("petType", ["dog", "cat"]);
+export const roleTypeEnum = pgEnum("role", ["buyer", "renter"]);
+export const petTypeEnum = pgEnum("petType", ["dog", "cat", "all"]);
 
 export const listingsTable = pgTable(
   "listings",
@@ -85,7 +84,7 @@ export const listingsTable = pgTable(
     ),
     check(
       "allowed_pet_type_check",
-      sql`(${table.allowedPets} = TRUE AND ${table.listingType} = 'forRent' AND ${table.allowedPetType} = 'cat') OR (${table.allowedPets} = TRUE AND ${table.listingType} = 'forRent' AND ${table.allowedPetType} = 'dog') OR (${table.allowedPets} = TRUE AND ${table.listingType} = 'forRent' AND (${table.allowedPetType} = 'cat' OR ${table.allowedPetType} = 'dog'))`,
+      sql`(${table.allowedPets} = TRUE AND ${table.allowedPetType} IS NOT NULL) OR (${table.allowedPets} IS NOT TRUE AND ${table.allowedPetType} IS NULL)`,
     ),
     check(
       "hoa_fee_check",
@@ -104,6 +103,39 @@ export const listingsTable = pgTable(
     check(
       "street_address_check",
       sql`length(trim(${table.streetAddress})) > 0`,
+    ),
+  ],
+);
+
+export const personasTable = pgTable(
+  "personas",
+  {
+    uuid: uuid().primaryKey().defaultRandom(),
+    role: roleTypeEnum().notNull(),
+    name: varchar({ length: 256 }).notNull(),
+    income: integer().notNull(),
+    budget: integer().notNull(),
+    hasKids: boolean(),
+    hasPets: boolean(),
+    petType: petTypeEnum(),
+    preferredCity: text().array(),
+    preferredState: text().array(),
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp()
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    check("income_check", sql`${table.income} > 0`),
+    check("budget_check", sql`${table.budget} > 0`),
+    check(
+      "pet_type_check",
+      sql`(${table.hasPets} = TRUE AND ${table.petType} IS NOT NULL) OR (${table.hasPets} = FALSE AND ${table.petType} IS NULL)`,
+    ),
+    check(
+      "preferred_city_or_state",
+      sql`${table.preferredCity} IS NOT NULL OR ${table.preferredState} IS NOT NULL`,
     ),
   ],
 );
