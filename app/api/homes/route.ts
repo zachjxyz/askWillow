@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { db } from "@/db";
 import {
   listingsTable,
@@ -8,138 +9,146 @@ import {
 } from "@/db/schema";
 import { and, eq, gte, lte } from "drizzle-orm";
 
+const searchParamsSchema = z.object({
+  listingType: z.enum(listingEnum.enumValues).optional(),
+  homeType: z.enum(homeTypeEnum.enumValues).optional(),
+  allowedPetType: z.enum(petTypeEnum.enumValues).optional(),
+  schoolDistrictRating: z.enum(schoolRatingEnum.enumValues).optional(),
+
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
+
+  allowedPets: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+  hoa: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+
+  minSalePrice: z.string().optional(),
+  maxSalePrice: z.string().optional(),
+  minMonthlyRent: z.string().optional(),
+  maxMonthlyRent: z.string().optional(),
+  minBathrooms: z.string().optional(),
+  maxHoaFee: z.string().optional(),
+
+  minBedrooms: z.coerce.number().int().positive().optional(),
+  maxBedrooms: z.coerce.number().int().positive().optional(),
+  minSqft: z.coerce.number().int().positive().optional(),
+  maxSqft: z.coerce.number().int().positive().optional(),
+  minYearBuilt: z.coerce.number().int().min(1800).max(2100).optional(),
+  maxYearBuilt: z.coerce.number().int().min(1800).max(2100).optional(),
+  minWalkScore: z.coerce.number().int().min(0).max(100).optional(),
+  minTransitScore: z.coerce.number().int().min(0).max(100).optional(),
+  minBikeScore: z.coerce.number().int().min(0).max(100).optional(),
+});
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const listingType = searchParams.get("listingType");
-  const homeType = searchParams.get("homeType");
-  const city = searchParams.get("city");
-  const state = searchParams.get("state");
-  const zip = searchParams.get("zip");
-  const allowedPets = searchParams.get("allowedPets");
-  const allowedPetType = searchParams.get("allowedPetType");
-  const hoa = searchParams.get("hoa");
-  const schoolDistrictRating = searchParams.get("schoolDistrictRating");
-  const minSalePrice = searchParams.get("minSalePrice");
-  const maxSalePrice = searchParams.get("maxSalePrice");
-  const minMonthlyRent = searchParams.get("minMonthlyRent");
-  const maxMonthlyRent = searchParams.get("maxMonthlyRent");
-  const minBedrooms = searchParams.get("minBedrooms");
-  const maxBedrooms = searchParams.get("maxBedrooms");
-  const minBathrooms = searchParams.get("minBathrooms");
-  const minSqft = searchParams.get("minSqft");
-  const maxSqft = searchParams.get("maxSqft");
-  const minYearBuilt = searchParams.get("minYearBuilt");
-  const maxYearBuilt = searchParams.get("maxYearBuilt");
-  const minWalkScore = searchParams.get("minWalkScore");
-  const minTransitScore = searchParams.get("minTransitScore");
-  const minBikeScore = searchParams.get("minBikeScore");
-  const maxHoaFee = searchParams.get("maxHoaFee");
 
+  const parsed = searchParamsSchema.safeParse(
+    Object.fromEntries(searchParams.entries()),
+  );
+
+  if (!parsed.success) {
+    return Response.json(
+      { error: "Invalid parameters", details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const params = parsed.data;
   const conditions = [];
 
-  if (listingType && listingEnum.enumValues.includes(listingType as any)) {
+  if (params.listingType) {
+    conditions.push(eq(listingsTable.listingType, params.listingType));
+  }
+  if (params.homeType) {
+    conditions.push(eq(listingsTable.homeType, params.homeType));
+  }
+  if (params.city) {
+    conditions.push(eq(listingsTable.city, params.city));
+  }
+  if (params.state) {
+    conditions.push(eq(listingsTable.state, params.state));
+  }
+  if (params.zip) {
+    conditions.push(eq(listingsTable.zip, params.zip));
+  }
+  if (params.allowedPets !== undefined) {
+    conditions.push(eq(listingsTable.allowedPets, params.allowedPets));
+  }
+  if (params.allowedPetType) {
+    conditions.push(eq(listingsTable.allowedPetType, params.allowedPetType));
+  }
+  if (params.hoa !== undefined) {
+    conditions.push(eq(listingsTable.hoa, params.hoa));
+  }
+  if (params.schoolDistrictRating) {
     conditions.push(
-      eq(
-        listingsTable.listingType,
-        listingType as (typeof listingEnum.enumValues)[number],
-      ),
+      eq(listingsTable.schoolDistrictRating, params.schoolDistrictRating),
     );
   }
-  if (homeType && homeTypeEnum.enumValues.includes(homeType as any)) {
-    conditions.push(
-      eq(
-        listingsTable.homeType,
-        homeType as (typeof homeTypeEnum.enumValues)[number],
-      ),
-    );
+  if (params.minSalePrice) {
+    conditions.push(gte(listingsTable.salePrice, params.minSalePrice));
   }
-  if (city) {
-    conditions.push(eq(listingsTable.city, city));
+  if (params.maxSalePrice) {
+    conditions.push(lte(listingsTable.salePrice, params.maxSalePrice));
   }
-  if (state) {
-    conditions.push(eq(listingsTable.state, state));
+  if (params.minMonthlyRent) {
+    conditions.push(gte(listingsTable.monthlyRent, params.minMonthlyRent));
   }
-  if (zip) {
-    conditions.push(eq(listingsTable.zip, zip));
+  if (params.maxMonthlyRent) {
+    conditions.push(lte(listingsTable.monthlyRent, params.maxMonthlyRent));
   }
-  if (allowedPets) {
-    conditions.push(eq(listingsTable.allowedPets, allowedPets === "true"));
+  if (params.minBedrooms) {
+    conditions.push(gte(listingsTable.bedrooms, params.minBedrooms));
   }
-  if (
-    allowedPetType &&
-    petTypeEnum.enumValues.includes(allowedPetType as any)
-  ) {
-    conditions.push(
-      eq(
-        listingsTable.allowedPetType,
-        allowedPetType as (typeof petTypeEnum.enumValues)[number],
-      ),
-    );
+  if (params.maxBedrooms) {
+    conditions.push(lte(listingsTable.bedrooms, params.maxBedrooms));
   }
-  if (hoa) {
-    conditions.push(eq(listingsTable.hoa, hoa === "true"));
+  if (params.minBathrooms) {
+    conditions.push(gte(listingsTable.bathrooms, params.minBathrooms));
   }
-  if (
-    schoolDistrictRating &&
-    schoolRatingEnum.enumValues.includes(schoolDistrictRating as any)
-  ) {
-    conditions.push(
-      eq(
-        listingsTable.schoolDistrictRating,
-        schoolDistrictRating as (typeof schoolRatingEnum.enumValues)[number],
-      ),
-    );
+  if (params.minSqft) {
+    conditions.push(gte(listingsTable.sqft, params.minSqft));
   }
-  if (minSalePrice) {
-    conditions.push(gte(listingsTable.salePrice, minSalePrice));
+  if (params.maxSqft) {
+    conditions.push(lte(listingsTable.sqft, params.maxSqft));
   }
-  if (maxSalePrice) {
-    conditions.push(lte(listingsTable.salePrice, maxSalePrice));
+  if (params.minYearBuilt) {
+    conditions.push(gte(listingsTable.yearBuilt, params.minYearBuilt));
   }
-  if (minMonthlyRent) {
-    conditions.push(gte(listingsTable.monthlyRent, minMonthlyRent));
+  if (params.maxYearBuilt) {
+    conditions.push(lte(listingsTable.yearBuilt, params.maxYearBuilt));
   }
-  if (maxMonthlyRent) {
-    conditions.push(lte(listingsTable.monthlyRent, maxMonthlyRent));
+  if (params.minWalkScore) {
+    conditions.push(gte(listingsTable.walkScore, params.minWalkScore));
   }
-  if (minBedrooms) {
-    conditions.push(gte(listingsTable.bedrooms, parseInt(minBedrooms)));
+  if (params.minTransitScore) {
+    conditions.push(gte(listingsTable.transitScore, params.minTransitScore));
   }
-  if (maxBedrooms) {
-    conditions.push(lte(listingsTable.bedrooms, parseInt(maxBedrooms)));
+  if (params.minBikeScore) {
+    conditions.push(gte(listingsTable.bikeScore, params.minBikeScore));
   }
-  if (minBathrooms) {
-    conditions.push(gte(listingsTable.bathrooms, minBathrooms));
-  }
-  if (minSqft) {
-    conditions.push(gte(listingsTable.sqft, parseInt(minSqft)));
-  }
-  if (maxSqft) {
-    conditions.push(lte(listingsTable.sqft, parseInt(maxSqft)));
-  }
-  if (minYearBuilt) {
-    conditions.push(gte(listingsTable.yearBuilt, parseInt(minYearBuilt)));
-  }
-  if (maxYearBuilt) {
-    conditions.push(lte(listingsTable.yearBuilt, parseInt(maxYearBuilt)));
-  }
-  if (minWalkScore) {
-    conditions.push(gte(listingsTable.walkScore, parseInt(minWalkScore)));
-  }
-  if (minTransitScore) {
-    conditions.push(gte(listingsTable.transitScore, parseInt(minTransitScore)));
-  }
-  if (minBikeScore) {
-    conditions.push(gte(listingsTable.bikeScore, parseInt(minBikeScore)));
-  }
-  if (maxHoaFee) {
-    conditions.push(lte(listingsTable.hoaFee, maxHoaFee));
+  if (params.maxHoaFee) {
+    conditions.push(lte(listingsTable.hoaFee, params.maxHoaFee));
   }
 
-  const results = await db
-    .select()
-    .from(listingsTable)
-    .where(and(...conditions));
+  try {
+    const results = await db
+      .select()
+      .from(listingsTable)
+      .where(and(...conditions));
 
-  return Response.json(results);
+    return Response.json(results);
+  } catch {
+    return Response.json(
+      { error: "Failed to fetch listings" },
+      { status: 500 },
+    );
+  }
 }

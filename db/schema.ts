@@ -11,6 +11,7 @@ import {
   char,
   numeric,
   timestamp,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const listingEnum = pgEnum("listingType", ["forSale", "forRent"]);
@@ -104,6 +105,14 @@ export const listingsTable = pgTable(
       "street_address_check",
       sql`length(trim(${table.streetAddress})) > 0`,
     ),
+    index("listings_city_idx").on(table.city),
+    index("listings_state_idx").on(table.state),
+    index("listings_zip_idx").on(table.zip),
+    index("listings_home_type_idx").on(table.homeType),
+    index("listings_listing_type_idx").on(table.listingType),
+    index("listings_bedrooms_idx").on(table.bedrooms),
+    index("listings_sale_price_idx").on(table.salePrice),
+    index("listings_monthly_rent_idx").on(table.monthlyRent),
   ],
 );
 
