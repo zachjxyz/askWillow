@@ -163,6 +163,7 @@ export async function chatWorkflow(
               and(
                 ...listingFilterConditions({
                   ...params,
+                  minBathrooms: params.minBathrooms?.toString(),
                   minSalePrice: params.minSalePrice?.toString(),
                   maxSalePrice: params.maxSalePrice?.toString(),
                   minMonthlyRent: params.minMonthlyRent?.toString(),

@@ -205,7 +205,7 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                           key={`${message.id}-${i}`}
                           toolCallId={part.toolCallId}
                           input={part.input as any}
-                          output={part.result as any}
+                          output={"result" in part ? (part.result as any) : undefined}
                         />
                       );
                     case "tool-searchHomes":
@@ -229,7 +229,7 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                           </svg>
                           <span>
                             Searched listings
-                            {part.result &&
+                            {"result" in part &&
                             Array.isArray(part.result) &&
                             part.result.length > 0
                               ? ` — found ${part.result.length} result${part.result.length === 1 ? "" : "s"}`
@@ -243,7 +243,7 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                           key={`${message.id}-${i}`}
                           toolCallId={part.toolCallId}
                           input={part.input as any}
-                          output={part.result as any}
+                          output={"result" in part ? (part.result as any) : undefined}
                         />
                       );
                   }
