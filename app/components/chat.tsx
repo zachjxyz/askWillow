@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
+import { lastAssistantMessageIsCompleteWithApprovalResponses } from "ai";
 import { Streamdown } from "streamdown";
 import { code } from "@streamdown/code";
 import { SearchApprovalCard } from "./search-approval-card";
@@ -24,7 +25,9 @@ type Persona = {
 export function ChatApp({ personas }: { personas: Persona[] }) {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [input, setInput] = useState("");
-  const { messages, sendMessage, addToolApprovalResponse, status } = useChat();
+  const { messages, sendMessage, addToolApprovalResponse, status } = useChat({
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -221,9 +224,22 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                                 id: part.approval.id,
                                 approved,
                                 reason,
+                                options: { body: { personaId: selectedPersona?.uuid } },
                               });
                             }}
                           />
+                        );
+                      }
+                      if (part.state === "approval-responded") {
+                        return (
+                          <div
+                            key={`${message.id}-${i}`}
+                            className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900"
+                          >
+                            <span className="animate-pulse">
+                              {part.approval.approved ? "Search approved — waiting..." : "Search rejected"}
+                            </span>
+                          </div>
                         );
                       }
                       if (part.state === "output-available") {
@@ -311,9 +327,22 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                                 id: part.approval.id,
                                 approved,
                                 reason,
+                                options: { body: { personaId: selectedPersona?.uuid } },
                               });
                             }}
                           />
+                        );
+                      }
+                      if (part.state === "approval-responded") {
+                        return (
+                          <div
+                            key={`${message.id}-${i}`}
+                            className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900"
+                          >
+                            <span className="animate-pulse">
+                              {part.approval.approved ? "Contacting agent..." : "Contact cancelled"}
+                            </span>
+                          </div>
                         );
                       }
                       if (part.state === "output-available") {

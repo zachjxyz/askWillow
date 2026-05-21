@@ -23,18 +23,19 @@ export const searchAgent = new ToolLoopAgent({
   callOptionsSchema: z.object({
     personaId: z.string().optional(),
   }),
-  prepareCall: async ({ options, instructions, model }) => {
-    if (!options?.personaId) return { instructions, model };
+  prepareCall: async ({ options, instructions, model, ...rest }) => {
+    if (!options?.personaId) return { instructions, model, ...rest };
 
     const [persona] = await db
       .select()
       .from(personasTable)
       .where(eq(personasTable.uuid, options.personaId));
 
-    if (!persona) return { instructions, model };
+    if (!persona) return { instructions, model, ...rest };
 
     return {
       model,
+      ...rest,
       instructions: [
         `You are a real estate assistant helping ${persona.name}, who is looking to ${persona.role === "buyer" ? "buy" : "rent"} a home.`,
         `Their budget is $${persona.budget.toLocaleString()} ${persona.role === "buyer" ? "purchase price" : "per month"} on an income of $${persona.income.toLocaleString()}/year.`,
