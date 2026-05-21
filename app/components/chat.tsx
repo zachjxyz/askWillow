@@ -3,8 +3,8 @@ import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Streamdown } from "streamdown";
 import { code } from "@streamdown/code";
-import { SearchApproval } from "./search-approval";
-import { ContactAgent } from "./contact-agent";
+import { SearchApprovalCard } from "./search-approval-card";
+import { ContactAgentCard } from "./contact-agent-card";
 
 type Persona = {
   uuid: string;
@@ -22,7 +22,7 @@ type Persona = {
 export function ChatApp({ personas }: { personas: Persona[] }) {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [input, setInput] = useState("");
-  const { messages, sendMessage, status } = useChat();
+  const { messages, sendMessage, addToolApprovalResponse, status } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -199,53 +199,105 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                           {part.text}
                         </Streamdown>
                       );
-                    case "tool-searchApproval":
-                      return (
-                        <SearchApproval
-                          key={`${message.id}-${i}`}
-                          toolCallId={part.toolCallId}
-                          input={part.input as any}
-                          output={"result" in part ? (part.result as any) : undefined}
-                        />
-                      );
                     case "tool-searchHomes":
+                      if (part.state === "approval-requested") {
+                        return (
+                          <SearchApprovalCard
+                            key={`${message.id}-${i}`}
+                            input={part.input as Record<string, unknown>}
+                            onRespond={(approved, reason) => {
+                              addToolApprovalResponse({
+                                id: part.approval.id,
+                                approved,
+                                reason,
+                              });
+                            }}
+                          />
+                        );
+                      }
+                      if (part.state === "output-available") {
+                        return (
+                          <div
+                            key={`${message.id}-${i}`}
+                            className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+                          >
+                            <svg
+                              className="h-3.5 w-3.5 shrink-0"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                              />
+                            </svg>
+                            <span>
+                              Searched listings
+                              {Array.isArray(part.output) && part.output.length > 0
+                                ? ` — found ${part.output.length} result${part.output.length === 1 ? "" : "s"}`
+                                : ""}
+                            </span>
+                          </div>
+                        );
+                      }
+                      if (part.state === "output-denied") {
+                        return (
+                          <div
+                            key={`${message.id}-${i}`}
+                            className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
+                          >
+                            <span>Search rejected</span>
+                          </div>
+                        );
+                      }
                       return (
                         <div
                           key={`${message.id}-${i}`}
-                          className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+                          className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900"
                         >
-                          <svg
-                            className="h-3.5 w-3.5 shrink-0"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={1.5}
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                            />
-                          </svg>
-                          <span>
-                            Searched listings
-                            {"result" in part &&
-                            Array.isArray(part.result) &&
-                            part.result.length > 0
-                              ? ` — found ${part.result.length} result${part.result.length === 1 ? "" : "s"}`
-                              : ""}
-                          </span>
+                          <span className="animate-pulse">Searching...</span>
                         </div>
                       );
                     case "tool-contactAgent":
-                      return (
-                        <ContactAgent
-                          key={`${message.id}-${i}`}
-                          toolCallId={part.toolCallId}
-                          input={part.input as any}
-                          output={"result" in part ? (part.result as any) : undefined}
-                        />
-                      );
+                      if (part.state === "approval-requested") {
+                        return (
+                          <ContactAgentCard
+                            key={`${message.id}-${i}`}
+                            input={part.input as { address: string; price: string; listingType: "forSale" | "forRent" }}
+                            onRespond={(approved, reason) => {
+                              addToolApprovalResponse({
+                                id: part.approval.id,
+                                approved,
+                                reason,
+                              });
+                            }}
+                          />
+                        );
+                      }
+                      if (part.state === "output-available") {
+                        return (
+                          <div
+                            key={`${message.id}-${i}`}
+                            className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
+                          >
+                            <span>Contact request submitted</span>
+                          </div>
+                        );
+                      }
+                      if (part.state === "output-denied") {
+                        return (
+                          <div
+                            key={`${message.id}-${i}`}
+                            className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
+                          >
+                            <span>Contact request cancelled</span>
+                          </div>
+                        );
+                      }
+                      return null;
                   }
                 })}
               </div>
