@@ -31,11 +31,14 @@ export function SearchApproval({ toolCallId, input, output }: SearchApprovalProp
     setIsSubmitting(true);
     setDecision(approved ? "approved" : "rejected");
     try {
-      await fetch("/api/hooks/search-approval", {
+      const res = await fetch("/api/hooks/search-approval", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toolCallId, approved, comment: comment || undefined }),
       });
+      if (!res.ok) setDecision(null);
+    } catch {
+      setDecision(null);
     } finally {
       setIsSubmitting(false);
     }

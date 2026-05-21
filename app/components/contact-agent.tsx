@@ -31,11 +31,14 @@ export function ContactAgent({ toolCallId, input, output }: ContactAgentProps) {
     setIsSubmitting(true);
     setDecision(approved ? "approved" : "rejected");
     try {
-      await fetch("/api/hooks/contact-agent", {
+      const res = await fetch("/api/hooks/contact-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toolCallId, approved, message: message || undefined }),
       });
+      if (!res.ok) setDecision(null);
+    } catch {
+      setDecision(null);
     } finally {
       setIsSubmitting(false);
     }
