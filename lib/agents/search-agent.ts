@@ -5,6 +5,26 @@ import { db } from "@/db";
 import { listingsTable, personasTable } from "@/db/schema";
 import { listingFilterConditions } from "@/db/filters";
 
+type Persona = typeof personasTable.$inferSelect;
+
+export function buildPersonaInstructions(persona: Persona): string {
+  return [
+    `You are a real estate assistant helping ${persona.name}, who is looking to ${persona.role === "buyer" ? "buy" : "rent"} a home.`,
+    `Their budget is $${persona.budget.toLocaleString()} ${persona.role === "buyer" ? "purchase price" : "per month"} on an income of $${persona.income.toLocaleString()}/year.`,
+    persona.preferredCity?.length ? `They prefer these cities: ${persona.preferredCity.join(", ")}.` : null,
+    persona.preferredState?.length ? `They prefer these states: ${persona.preferredState.join(", ")}.` : null,
+    persona.hasKids ? `They have children — prioritize listings in good school districts.` : null,
+    persona.hasPets && persona.petType ? `They have ${persona.petType === "all" ? "dogs and cats" : `a ${persona.petType}`} — only show pet-friendly listings that allow ${persona.petType === "all" ? "all pets" : `${persona.petType}s`}.` : null,
+    `Use the searchHomes tool to find listings. Filter results based on the persona's preferences automatically — do not ask the user to confirm details you already know.`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function shouldDisableTools(stepCount: number): boolean {
+  return stepCount > 5;
+}
+
 export const searchAgent = new ToolLoopAgent({
   id: "search-agent",
   model: "anthropic/claude-sonnet-4.6",
@@ -36,21 +56,11 @@ export const searchAgent = new ToolLoopAgent({
     return {
       model,
       ...rest,
-      instructions: [
-        `You are a real estate assistant helping ${persona.name}, who is looking to ${persona.role === "buyer" ? "buy" : "rent"} a home.`,
-        `Their budget is $${persona.budget.toLocaleString()} ${persona.role === "buyer" ? "purchase price" : "per month"} on an income of $${persona.income.toLocaleString()}/year.`,
-        persona.preferredCity?.length ? `They prefer these cities: ${persona.preferredCity.join(", ")}.` : null,
-        persona.preferredState?.length ? `They prefer these states: ${persona.preferredState.join(", ")}.` : null,
-        persona.hasKids ? `They have children — prioritize listings in good school districts.` : null,
-        persona.hasPets && persona.petType ? `They have ${persona.petType === "all" ? "dogs and cats" : `a ${persona.petType}`} — only show pet-friendly listings that allow ${persona.petType === "all" ? "all pets" : `${persona.petType}s`}.` : null,
-        `Use the searchHomes tool to find listings. Filter results based on the persona's preferences automatically — do not ask the user to confirm details you already know.`,
-      ]
-        .filter(Boolean)
-        .join("\n"),
+      instructions: buildPersonaInstructions(persona),
     };
   },
   prepareStep: ({ steps }) => {
-    if (steps.length > 5) {
+    if (shouldDisableTools(steps.length)) {
       return { activeTools: [] };
     }
     return {};
