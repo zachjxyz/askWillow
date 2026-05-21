@@ -7,10 +7,12 @@ import {
   homeTypeEnum,
   petTypeEnum,
   schoolRatingEnum,
+  statusEnum,
 } from "@/db/schema";
 import { and } from "drizzle-orm";
 
 const searchParamsSchema = z.object({
+  status: z.enum(statusEnum.enumValues).optional(),
   listingType: z.enum(listingEnum.enumValues).optional(),
   homeType: z.enum(homeTypeEnum.enumValues).optional(),
   allowedPetType: z.enum(petTypeEnum.enumValues).optional(),
@@ -66,7 +68,7 @@ export async function GET(request: Request) {
     const results = await db
       .select()
       .from(listingsTable)
-      .where(and(...listingFilterConditions(params)));
+      .where(and(...listingFilterConditions({ status: "active", ...params })));
 
     return Response.json(results);
   } catch {

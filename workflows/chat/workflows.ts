@@ -162,6 +162,7 @@ export async function chatWorkflow(
             .where(
               and(
                 ...listingFilterConditions({
+                  status: "active",
                   ...params,
                   minBathrooms: params.minBathrooms?.toString(),
                   minSalePrice: params.minSalePrice?.toString(),

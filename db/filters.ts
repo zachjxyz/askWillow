@@ -4,10 +4,12 @@ import {
   homeTypeEnum,
   petTypeEnum,
   schoolRatingEnum,
+  statusEnum,
 } from "@/db/schema";
 import { eq, gte, lte, inArray } from "drizzle-orm";
 
 export type ListingFilters = {
+  status?: (typeof statusEnum.enumValues)[number];
   listingType?: (typeof listingEnum.enumValues)[number];
   homeType?: (typeof homeTypeEnum.enumValues)[number];
   city?: string;
@@ -37,6 +39,9 @@ export type ListingFilters = {
 export function listingFilterConditions(filter: ListingFilters) {
   const conditions = [];
 
+  if (filter.status) {
+    conditions.push(eq(listingsTable.status, filter.status));
+  }
   if (filter.listingType) {
     conditions.push(eq(listingsTable.listingType, filter.listingType));
   }
