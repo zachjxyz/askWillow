@@ -3,41 +3,7 @@ import { describe, it, expect } from "vitest";
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 import { listingFilterConditions } from "../db/filters";
-
-// ─── Shared tool schema (mirrors workflow definition) ────────────
-
-const searchHomesSchema = z.object({
-  listingType: z.enum(["forSale", "forRent"]).optional(),
-  city: z.string().optional(),
-  state: z
-    .string()
-    .optional()
-    .describe("2-letter state abbreviation only, e.g. TX, CO, WA."),
-  minBathrooms: z.number().optional(),
-  minBedrooms: z.number().int().optional(),
-  maxBedrooms: z.number().int().optional(),
-  minSalePrice: z.number().optional(),
-  maxSalePrice: z.number().optional(),
-  minMonthlyRent: z.number().optional(),
-  maxMonthlyRent: z.number().optional(),
-  allowedPets: z
-    .boolean()
-    .optional()
-    .describe("Only for forRent listings."),
-  allowedPetType: z
-    .enum(["dog", "cat", "all"])
-    .optional()
-    .describe("Only for forRent listings."),
-  homeType: z
-    .enum([
-      "single-family",
-      "multi-family",
-      "townhouse",
-      "condo",
-      "apartment",
-    ])
-    .optional(),
-});
+import { searchHomesSchema } from "../workflows/chat/workflows";
 
 // Helper: generate a single tool call from a prompt
 async function getToolCallParams(prompt: string) {

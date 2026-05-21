@@ -10,6 +10,74 @@ import { listingsTable, personasTable } from "@/db/schema";
 import { searchApprovalHook } from "@/workflows/hooks/search-approval";
 import { contactAgentHook } from "@/workflows/hooks/contact-agent";
 
+export const searchHomesSchema = z.object({
+  listingType: z
+    .enum(["forSale", "forRent"])
+    .optional()
+    .describe("Whether the user wants to buy or rent"),
+  city: z.string().optional().describe("City name"),
+  state: z
+    .string()
+    .optional()
+    .describe(
+      "State name: 2 letter state abbreviations only. By default, the only states you have available to search are TX and CO.",
+    ),
+  minBathrooms: z
+    .number()
+    .optional()
+    .describe(
+      "Minimum number of bedrooms with the lowest being 0.5 aka 'half' bathrooms",
+    ),
+  minBedrooms: z
+    .number()
+    .int()
+    .optional()
+    .describe("Minimum number of bedrooms"),
+  maxBedrooms: z
+    .number()
+    .int()
+    .optional()
+    .describe("Maximum number of bedrooms"),
+  minSalePrice: z
+    .number()
+    .optional()
+    .describe("Minimum sale price in dollars over zero"),
+  maxSalePrice: z
+    .number()
+    .optional()
+    .describe("Maximum sale price in dollars"),
+  minMonthlyRent: z
+    .number()
+    .optional()
+    .describe("Minimum monthly rent in dollars over zero"),
+  maxMonthlyRent: z
+    .number()
+    .optional()
+    .describe("Maximum monthly rent in dollars"),
+  allowedPets: z
+    .boolean()
+    .optional()
+    .describe(
+      "Whether the listing allows pets. Only applicable for forRent listings. Do not include for forSale searches — purchased homes have no pet restrictions.",
+    ),
+  allowedPetType: z
+    .enum(["dog", "cat", "all"])
+    .optional()
+    .describe(
+      "The type of pets allowed: dog, cat, or all. Only applicable for forRent listings. Do not include for forSale searches.",
+    ),
+  homeType: z
+    .enum([
+      "single-family",
+      "multi-family",
+      "townhouse",
+      "condo",
+      "apartment",
+    ])
+    .optional()
+    .describe("Type of home the user wants to live in"),
+});
+
 export async function chatWorkflow(
   messages: ModelMessage[],
   personaId?: string,
@@ -87,73 +155,7 @@ export async function chatWorkflow(
       },
       searchHomes: tool({
         description: "Get a list of homes",
-        inputSchema: z.object({
-          listingType: z
-            .enum(["forSale", "forRent"])
-            .optional()
-            .describe("Whether the user wants to buy or rent"),
-          city: z.string().optional().describe("City name"),
-          state: z
-            .string()
-            .optional()
-            .describe(
-              "State name: 2 letter state abbreviations only. By default, the only states you have available to search are TX and CO.",
-            ),
-          minBathrooms: z
-            .number()
-            .optional()
-            .describe(
-              "Minimum number of bedrooms with the lowest being 0.5 aka 'half' bathrooms",
-            ),
-          minBedrooms: z
-            .number()
-            .int()
-            .optional()
-            .describe("Minimum number of bedrooms"),
-          maxBedrooms: z
-            .number()
-            .int()
-            .optional()
-            .describe("Maximum number of bedrooms"),
-          minSalePrice: z
-            .number()
-            .optional()
-            .describe("Minimum sale price in dollars over zero"),
-          maxSalePrice: z
-            .number()
-            .optional()
-            .describe("Maximum sale price in dollars"),
-          minMonthlyRent: z
-            .number()
-            .optional()
-            .describe("Minimum monthly rent in dollars over zero"),
-          maxMonthlyRent: z
-            .number()
-            .optional()
-            .describe("Maximum monthly rent in dollars"),
-          allowedPets: z
-            .boolean()
-            .optional()
-            .describe(
-              "Whether the listing allows pets. Only applicable for forRent listings. Do not include for forSale searches — purchased homes have no pet restrictions.",
-            ),
-          allowedPetType: z
-            .enum(["dog", "cat", "all"])
-            .optional()
-            .describe(
-              "The type of pets allowed: dog, cat, or all. Only applicable for forRent listings. Do not include for forSale searches.",
-            ),
-          homeType: z
-            .enum([
-              "single-family",
-              "multi-family",
-              "townhouse",
-              "condo",
-              "apartment",
-            ])
-            .optional()
-            .describe("Type of home the user wants to live in"),
-        }),
+        inputSchema: searchHomesSchema,
         execute: async (params) => {
           "use step";
           const results = await db
