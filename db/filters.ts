@@ -9,7 +9,7 @@ import {
 import { eq, gte, lte, inArray } from "drizzle-orm";
 
 export type ListingFilters = {
-  status?: (typeof statusEnum.enumValues)[number];
+  status?: (typeof statusEnum.enumValues)[number] | (typeof statusEnum.enumValues)[number][];
   listingType?: (typeof listingEnum.enumValues)[number];
   homeType?: (typeof homeTypeEnum.enumValues)[number];
   city?: string;
@@ -40,7 +40,11 @@ export function listingFilterConditions(filter: ListingFilters) {
   const conditions = [];
 
   if (filter.status) {
-    conditions.push(eq(listingsTable.status, filter.status));
+    if (Array.isArray(filter.status)) {
+      conditions.push(inArray(listingsTable.status, filter.status));
+    } else {
+      conditions.push(eq(listingsTable.status, filter.status));
+    }
   }
   if (filter.listingType) {
     conditions.push(eq(listingsTable.listingType, filter.listingType));

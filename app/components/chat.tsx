@@ -26,6 +26,7 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [input, setInput] = useState("");
   const { messages, sendMessage, addToolApprovalResponse, status } = useChat({
+    id: selectedPersona?.uuid ?? "default",
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
   });
   const scrollRef = useRef<HTMLDivElement>(null);

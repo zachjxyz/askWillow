@@ -71,8 +71,13 @@ describe("filter logic", () => {
     expect(conditions).toHaveLength(2);
   });
 
-  it("status filter produces a condition", () => {
+  it("status filter produces a condition for single value", () => {
     const conditions = listingFilterConditions({ status: "active" });
+    expect(conditions).toHaveLength(1);
+  });
+
+  it("status filter produces a condition for array of values", () => {
+    const conditions = listingFilterConditions({ status: ["active", "available"] });
     expect(conditions).toHaveLength(1);
   });
 

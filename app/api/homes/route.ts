@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     const results = await db
       .select()
       .from(listingsTable)
-      .where(and(...listingFilterConditions({ status: "active", ...params })));
+      .where(and(...listingFilterConditions({ status: ["active", "available"], ...params })));
 
     return Response.json(results);
   } catch {
