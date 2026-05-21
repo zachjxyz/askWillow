@@ -5,6 +5,8 @@ import { Streamdown } from "streamdown";
 import { code } from "@streamdown/code";
 import { SearchApprovalCard } from "./search-approval-card";
 import { ContactAgentCard } from "./contact-agent-card";
+import { SearchApproval } from "./search-approval";
+import { ContactAgent } from "./contact-agent";
 
 type Persona = {
   uuid: string;
@@ -199,6 +201,15 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                           {part.text}
                         </Streamdown>
                       );
+                    case "tool-searchApproval":
+                      return (
+                        <SearchApproval
+                          key={`${message.id}-${i}`}
+                          toolCallId={part.toolCallId}
+                          input={part.input as { summary: string }}
+                          output={"result" in part ? (part.result as string) : undefined}
+                        />
+                      );
                     case "tool-searchHomes":
                       if (part.state === "approval-requested") {
                         return (
@@ -253,6 +264,34 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                           </div>
                         );
                       }
+                      if ("result" in part) {
+                        return (
+                          <div
+                            key={`${message.id}-${i}`}
+                            className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+                          >
+                            <svg
+                              className="h-3.5 w-3.5 shrink-0"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                              />
+                            </svg>
+                            <span>
+                              Searched listings
+                              {Array.isArray(part.result) && part.result.length > 0
+                                ? ` — found ${part.result.length} result${(part.result as unknown[]).length === 1 ? "" : "s"}`
+                                : ""}
+                            </span>
+                          </div>
+                        );
+                      }
                       return (
                         <div
                           key={`${message.id}-${i}`}
@@ -297,7 +336,14 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
                           </div>
                         );
                       }
-                      return null;
+                      return (
+                        <ContactAgent
+                          key={`${message.id}-${i}`}
+                          toolCallId={part.toolCallId}
+                          input={part.input as { address: string; price: string; listingType: "forSale" | "forRent" }}
+                          output={"result" in part ? (part.result as string) : undefined}
+                        />
+                      );
                   }
                 })}
               </div>

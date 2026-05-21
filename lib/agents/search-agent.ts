@@ -103,6 +103,7 @@ export const searchAgent = new ToolLoopAgent({
           .where(
             and(
               ...listingFilterConditions({
+                status: "active",
                 ...params,
                 minBathrooms: params.minBathrooms?.toString(),
                 minSalePrice: params.minSalePrice?.toString(),
