@@ -170,7 +170,8 @@ export async function chatWorkflow(
                   maxMonthlyRent: params.maxMonthlyRent?.toString(),
                 }),
               ),
-            );
+            )
+            .limit(10);
           return results;
         },
       }),
