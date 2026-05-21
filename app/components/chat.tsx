@@ -25,6 +25,7 @@ type Persona = {
 export function ChatApp({ personas }: { personas: Persona[] }) {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [input, setInput] = useState("");
+  const [durable, setDurable] = useState(false);
   const { messages, sendMessage, addToolApprovalResponse, status } = useChat({
     id: selectedPersona?.uuid ?? "default",
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
@@ -160,12 +161,29 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
               {selectedPersona.role}
             </span>
           </div>
-          <button
-            onClick={() => setSelectedPersona(null)}
-            className="text-xs text-zinc-400 transition-colors hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
-          >
-            Switch persona
-          </button>
+          <div className="flex items-center gap-4">
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <div
+                role="switch"
+                aria-checked={durable}
+                onClick={() => setDurable((d) => !d)}
+                className={`relative h-4 w-7 rounded-full transition-colors ${durable ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"}`}
+              >
+                <div
+                  className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${durable ? "translate-x-3" : ""}`}
+                />
+              </div>
+              <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+                Durable
+              </span>
+            </label>
+            <button
+              onClick={() => setSelectedPersona(null)}
+              className="text-xs text-zinc-400 transition-colors hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+            >
+              Switch persona
+            </button>
+          </div>
         </div>
       </div>
 
@@ -390,7 +408,7 @@ export function ChatApp({ personas }: { personas: Persona[] }) {
             if (!input.trim()) return;
             sendMessage(
               { text: input },
-              { body: { personaId: selectedPersona.uuid } },
+              { body: { personaId: selectedPersona.uuid, durable } },
             );
             setInput("");
           }}
